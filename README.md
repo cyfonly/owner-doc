@@ -15,41 +15,41 @@ OWNER 是一个 java 库，即 jar 包。OWNER 可以在 Maven 仓库中获取�
 
 #Maven 
 在 Maven 项目中引用非常简单，只需要在项目 pom.xml 文件中添加以下依赖： 
-<dependencies>
+'<dependencies>
     <dependency>
         <groupId>org.aeonbits.owner</groupId>
         <artifactId>owner</artifactId>
         <version>1.0.8</version>
     </dependency>
-</dependencies>
+</dependencies>'
 如果有更新的版本，只需要将新版本号替换 1.0.8 即可。写这篇文章时最新版本就是 1.0.8，但在使用时你最好检查下是否有新版本。
 当前很多 IDE 都能很好的集成Maven，所以在 pom.xml 文件中增加了上述依赖并刷新项目后，你就可以使用 OWNER 了。
 
 #Java 8 
-        java 8 引入了一些新的语言特性，比如接口中的 default methods。这种情况下 artifactId  需要使用 owber-java8 ：
-<dependencies>
+java 8 引入了一些新的语言特性，比如接口中的 default methods。这种情况下 artifactId  需要使用 owber-java8 ：
+'<dependencies>
         <dependency>
             <groupId>org.aeonbits.owner</groupId>
             <artifactId>owner-java8</artifactId>
             <version>1.0.6</version>
         </dependency>
-</dependencies>
+</dependencies>'
 由于 owner-java8 依赖于 owner，所以你不需要在 Maven 依赖中同时指定它们两个。 
 
 #基本用法
 要使用 OWNER API，你需要先定义一个与 properties 文件相关联的 java 接口类。
-        假设你定义的 properties 文件名字为 ServerConfig.properties：
-port=80
+假设你定义的 properties 文件名字为 ServerConfig.properties：
+'port=80
 hostname=foobar.com
-maxThreads=100
+maxThreads=100'
 你可以在同一个 package 下定义一个简单的 java 接口类 ServerConfig.java 来访问 properties 文件：
-import org.aeonbits.owner.Config;
+'import org.aeonbits.owner.Config;
 public interface ServerConfig extends Config {
     int port();
     String hostname();
     @DefaultValue("42")
     int maxThreads();
-}
+}'
 
 
 

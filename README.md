@@ -5,7 +5,7 @@ OWNER旨在摒弃properties文件的样板代码，助你轻松管理项目配�
 * 灵活：选择你需要的功能，忘记你不需要的；容易上手，丰富的文档 
 
 #Welcome 
-本文旨在对 OWNER 提供综合性的指导，包括基本特性、高级用法等主题，并且文中附有详细 demo。 
+本文旨在对 OWNER 提供综合性的指导，包括基本特性、高级用法等主题，并且文中附有详细 demo。  
 英文地址：[http://owner.aeonbits.org/](http://owner.aeonbits.org/)  
 中文地址：[http://www.jisumayi.com/?id=43](http://www.jisumayi.com/?id=43)  
 

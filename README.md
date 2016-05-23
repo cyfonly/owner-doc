@@ -996,3 +996,142 @@ public interface SampleConfig extends Config {
   
 ###<a id="factory">配置工厂</a>  
 
+
+　　
+　　　　
+　　　　
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#####监听属性改变  
+  
+当用户通过 Mutable 接口中声明的方法改变属性、或者重加载发生时PropertyChangeEvent 就会发生。要在属性改变事件发生时获得通知，你的接口必须继承暴露了注册 PropertyChangeListener 方法的 Mutable。 你也可以实现 TransactionalPropertyChangeListener，它会在属性改变生效之前通知你，这样你就可以检查哪些属性发生了变化，并在这些变化不适用于你的程序时进行单个回滚或者全部回滚。  
+  
+![](http://owner.aeonbits.org/img/propertychange-event.png)  
+  
+Mutable 接口允许增加或移除 PropertyChangeListener对象。你可以增加一个监听器指定属性名，这样这个监听器就会和某个属性绑定。  
+  
+```
+public interface Mutable extends Config {
+　　void addPropertyChangeListener(String propertyName, PropertyChangeListener listener);
+　　void addPropertyChangeListener(PropertyChangeListener listener);
+　　void removePropertyChangeListener(PropertyChangeListener listener);
+　　// ...the rest of the interface is cut...
+}
+```  
+  
+Mutable 接口定义了改变属性值的方法，这些方法会触发一个  PropertyChangeEvent 事件并通知注册的监听器。  
+  
+```
+public interface Mutable extends Config {
+　　String setProperty(String key, String value);
+　　String removeProperty(String key);
+　　void clear();
+　　void load(InputStream inStream) throws IOException;
+　　void load(Reader reader) throws IOException;
+　　// ...the rest of the interface is cut...
+}
+```
+  
+PropertyChangeListener 接口来源于 java.beans 包，它定义了一个 propertyChange() 方法来接收 PropertyChangeEvent，PropertyChangeEvent 包含了 propertyName、oldValue 和 newValue。  
+  
+当我们调用 Mutable.addPropertyChangeListener() 方法时，它会传递一个 TransactionalPropertyChangeListener实例，TransactionalPropertyChangeListener 继承了 PropertyChangeListener 并增加了一个 beforePropertyChange() 方法。这个监听器在加载已经触发但改变生效之间收到通知信息。这种情况下监听器就可以检查发生的变化及是否接收变化，它能触发 RollbackOperationException 和 RollbackBatchException 异常。  
+  
+当抛出 RollbackOperationException 异常时，监听器将执行单个属性改变的回滚，即便这个属性改变已经被一个会导致很多属性改变的事件所触发，它也仅仅希望单个属性改变被回滚。相反，RollbackBatchException 异常意味着所有改变都将回滚并保留原值。  
+  
+当以上两个异常中的任何一个被抛出，由于监听器终止了改变所以 PropertyChangeListener.propertyChange() 将不会被调用。  
+  
+显然，在热加载过程中或者通过 Reloadable 接口调用 的 reload() 操作会触发 PropertyChangeEvent. 事件。举个例子：  
+  
+```
+@Sources("Example.properties")
+interface MyConfig extends Reloadable {
+　　@DefaultValue("5")
+　　Integer someInteger();
+　　@DefaultValue("foobar")
+　　String someString();
+　　@DefaultValue("3.14")
+　　Double someDouble();
+　　String nullsByDefault();
+}
+MyConfig cfg = ConfigFactory.create(MyConfig.class);
+final boolean[] reloadPerformed = new boolean[] {false};
+cfg.addPropertyChangeListener("someInteger",
+　　　　new TransactionalPropertyChangeListener() {
+　　public void beforePropertyChange(PropertyChangeEvent event)
+　　　　　　throws RollbackOperationException, RollbackBatchException {
+　　　　String notAllowedValue = "88";
+　　　　String makesEverythingToRollback = "42";
+　　　　String newSomeInteger = (String)event.getNewValue();
+　　　　if (notAllowedValue.equals(newSomeInteger))
+　　　　　　throw new RollbackOperationException("88 is not allowed for property 'someInteger', " +"the single property someInteger is rolled back");
+　　　　if (makesEverythingToRollback.equals(newSomeInteger))
+　　　　　　throw new RollbackBatchException("42 is not allowed for property 'someInteger', " +　"the whole event is rolled back");
+　　}
+　　public void propertyChange(PropertyChangeEvent evt) {
+　　　　reloadPerformed[0] = true;
+　　}
+});
+save(target, new Properties() { {
+　　setProperty("someInteger", "41");
+　　setProperty("someString", "bazbar");
+　　setProperty("someDouble", "2.718");
+　　setProperty("nullsByDefault", "NotNullNow");
+}});
+cfg.reload();
+assertTrue(reloadPerformed[0]);
+assertEquals(new Integer(41), cfg.someInteger());
+assertEquals("bazbar", cfg.someString());
+assertEquals(new Double("2.718"), cfg.someDouble());
+assertNotNull(cfg.nullsByDefault());
+reloadPerformed[0] = false;
+cfg.setProperty("someInteger", "55");
+assertTrue(reloadPerformed[0]);
+assertEquals(new Integer(55), cfg.someInteger());
+reloadPerformed[0] = false;
+cfg.setProperty("someInteger", "88");
+// 88 is rolled back.
+assertFalse(reloadPerformed[0]);
+assertEquals(new Integer(55), cfg.someInteger());
+reloadPerformed[0] = false;
+save(target, new Properties() { {
+　　setProperty("someInteger", "42");
+　　setProperty("someString", "blahblah");
+　　setProperty("someDouble", "1.234");
+}});
+cfg.reload();
+assertFalse(reloadPerformed[0]);
+assertEquals(new Integer(55), cfg.someInteger());
+assertEquals("bazbar", cfg.someString());
+assertEquals(new Double("2.718"), cfg.someDouble());
+assertNotNull(cfg.nullsByDefault());
+reloadPerformed[0] = false;
+save(target, new Properties() { {
+　　setProperty("someInteger", "88");
+　　setProperty("someString", "this is not rolled back");
+　　setProperty("someDouble", "1.2345");
+}});
+cfg.reload();
+assertFalse(reloadPerformed[0]);
+// only someInteger=88 is rolled back
+assertEquals(new Integer(55), cfg.someInteger());
+assertEquals("this is not rolled back", cfg.someString());
+assertEquals(new Double("1.2345"), cfg.someDouble());
+assertNull(cfg.nullsByDefault());
+```
+  
+以上所讲的事件通知机制允许用户进行一些基本校验，将来会提供一个更简单、更强大的校验机制，而事件机制将会其底层支撑。

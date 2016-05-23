@@ -1,7 +1,8 @@
 #Welcome 
 本文旨在对 owner 提供综合性的指导，包括基本功能、高级用法等主题，并且文中附有详细 demo。  
 
-英文地址：[http://owner.aeonbits.org/](http://owner.aeonbits.org/)  
+owner github：[https://github.com/lviggiano/owner](https://github.com/lviggiano/owner)
+英文文档地址：[http://owner.aeonbits.org/](http://owner.aeonbits.org/)  
 
 #概述
 owner 是个超轻量 java 库（jar包）， 旨在摒弃 properties 文件的样板代码，助你轻松管理项目配置： 

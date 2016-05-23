@@ -162,11 +162,11 @@ public interface ServerConfig extends Config {
 　　int maxThreads();
 }
 ```
-在上面的例子中， owner 会尝试从不同的 @Sources 中加载属性：
+在上面的例子中， owner 会尝试从不同的 @Sources 中加载属性：  
 1. 首先，它会尝试从用户home目录的 ~/.myapp.config 加载属性文件，假如找到，这个文件将会被使用；  
-2. 假如上一个失败，它就会尝试从 /etc/myapp.config 加载属性文件，假如找到，这个文件将会被使用；
-3. 作为最后的手段，它将尝试从类路径下以 foo/bar/baz.properties 标志的文件中加载属性；
-4. 假如以上 URL 资源都不存在，java 类将不会与任何文件相关联，只有 @DefaultValue 会被使用。假如没有默认值，将会返回null（就像 java.util.Properties）
+2. 假如上一个失败，它就会尝试从 /etc/myapp.config 加载属性文件，假如找到，这个文件将会被使用；  
+3. 作为最后的手段，它将尝试从类路径下以 foo/bar/baz.properties 标志的文件中加载属性；  
+4. 假如以上 URL 资源都不存在，java 类将不会与任何文件相关联，只有 @DefaultValue 会被使用。假如没有默认值，将会返回null（就像 java.util.Properties）  
 在上面的例子中，属性值只会从第一个被找到的文件中加载。一旦有匹配的文件被加载，其他的都会被忽略。这是使用了 @Sources 注解的默认加载方式，你也可以显式的在接口定义时使用 @LoadPolicy(LoadType.FIRST) 注解来指定。  
 那么假如你需要在一些属性间做一些重载该怎么办？没问题，这完全是可能的，你可以通过 @LoadPolicy(LoadType.MERGE) 注解来实现：
 ```
@@ -178,11 +178,11 @@ public interface ServerConfig extends Config {
 　　...
 }
 ```
-这种情况下，所有 URL 中指定的文件都将被查询到，并且第一个定义某重载属性的文件中的值将会被采纳。具体过程如下：
-1. 首先，它会从 ~/.myapp.config 中加载指定的属性，如果找到就将关联的属性值返回；
-2. 然后，从 /etc/myapp.config 中加载指定的属性，如果找到就将关联的属性值返回；
-3. 最后它会从 classpath 路径下的 foo/bar/baz.properties 中加载指定的属性，如果找到就将关联的属性值返回；
-4. 假如指定的属性未在上述任何文件中找到的话，它就会返回用 @DefaultValue 标注的值，否则返回null。
+这种情况下，所有 URL 中指定的文件都将被查询到，并且第一个定义某重载属性的文件中的值将会被采纳。具体过程如下：  
+1. 首先，它会从 ~/.myapp.config 中加载指定的属性，如果找到就将关联的属性值返回；  
+2. 然后，从 /etc/myapp.config 中加载指定的属性，如果找到就将关联的属性值返回；  
+3. 最后它会从 classpath 路径下的 foo/bar/baz.properties 中加载指定的属性，如果找到就将关联的属性值返回；  
+4. 假如指定的属性未在上述任何文件中找到的话，它就会返回用 @DefaultValue 标注的值，否则返回null。  
 因此基本上我们在多个 properties 文件中执行合并，且第一个properties 文件会重写后面的文件的相同属性值。  
 @Sources注解通过语法 file:${user.home}/.myapp.config （通过'user.home' 系统属性得到解决）或者 file:${HOME}/.myapp.config （通过$HOME 环境变量得到解决）考虑系统属性或环境变量。前面例子中使用的“~”是另一个变量扩展的例子，它等同于 ${user.home}。  
 

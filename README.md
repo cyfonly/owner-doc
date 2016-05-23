@@ -995,6 +995,45 @@ public interface SampleConfig extends Config {
 上面的例子中 String hello(String name) 将会返回 "Hello %s, welcome on ${planet}!"，忽略参数传递。  
   
 ###<a id="factory">配置工厂</a>  
+由于大多数事情都是通过注解来完成，所以在 owner 中并没有太多配置。  
+  
+有人曾问过：我想在运行时确定资源位置，这可能吗？简单的回答是没有，即使有一些选择来解决这个限制。但是最后，我们同意增加一些配置属性来配置 owner 的 ConfigFactory。以下面的例子来说明：  
+  
+```
+// notice ${mypath} here
+@Sources("file:${mypath}/myconfig.properties");
+interface MyConfig extends Config { ... }
+MyConfig cfg = ConfigFactory.create(MyConfig.class);
+```
+  
+变量 ${mypath} 应该是从系统属性或者环境变量中扩展而来（加入有定义的话）。然而这不够简便：环境变量是只读的，并且有些时候要改变系统属性并不容易，尤其是部署在共享 JVM 中的应用。  
+  
+因此， owner 提供一些与 ConfigFactory 相关的上下文属性。  
+  
+```
+// notice ${mypath} here
+@Sources("file:${mypath}/myconfig.properties");
+interface MyConfig extends Config { ... }
+// notice ${mypath} here
+ConfigFactory.setProperty("mypath", "/foo/bar/baz");
+MyConfig cfg = ConfigFactory.create(MyConfig.class);
+```
+  
+当 create() 方法执行 "file:${mypath}/myconfig.properties" 时，它将会扩展为  "file:/foo/bar/baz/myconfig.properties"。  
+  
+需要注意的是，加入你修改了 ConfigFactory 中的值并想重新加载这个 Config 对象，这并不会生效，因为 Config 对象只是工作在这些属性的快照上。  
+  
+你完全可以在运行时定义配置文件的来源：  
+  
+````
+// notice ${myurl} here
+@Sources("${myurl}");
+interface MyConfig extends Config { ... }
+// notice ${myurl} here
+ConfigFactory.setProperty("myurl", "http://somewhere.com/conf.properties");
+MyConfig cfg = ConfigFactory.create(MyConfig.class);
+```
+  
 
 
 　　

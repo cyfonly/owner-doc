@@ -16,10 +16,10 @@ owner 是个超轻量 java 库（jar包）， 旨在摒弃 properties 文件的�
 	+ <a href="#maven">maven</a>
 	+ <a href="#java8">java 8</a>
 - <a href="#baseuse">基本用法</a>
-	+ 映射机制
-	+ 使用 Config 对象
-	+ 使用 @DefaultValue 和 @Key 注解
-	+ 未定义属性
+	+ <a href="#mapping">映射机制</a>
+	+ <a href="#useconfig">使用 Config 对象</a>
+	+ <a href="#useano">使用 @DefaultValue 和 @Key 注解</a>
+	+ <a href="#notdefi">未定义属性</a>
 - <a href="#feature">功能特性</a>
 	+ 加载策略
 	+ 引用属性
@@ -88,7 +88,66 @@ public interface ServerConfig extends Config {
 ```
 注意上面的接口要继承 Config，这是一个让 owner 正常工作的标记接口。由于设计这个接口的目的是把属性映射到一小段代码中，我们不妨把这个接口叫做“属性映射接口”或者“映射接口”。  
   
-  
+###<a id="mapping">映射机制</a>
+由于 properties 文件和 java 接口类有相同的名字且都在同一个包下面，owner API 能够自动把两者关联起来。  
+举个例子，假如你的映射接口叫做 com.foo.bar.ServerConfig，owner 会试着从类路径中把它关联到 com.foo.bar.ServerConfig.properties。同样，在 properties 文件中定义的属性名也会自动和 java 类中相同名字的方法相关联。比如属性文件中的属性 port 会和 java 类中的方法 int port()关联，属性 hostname 会和方法 String hostname() 关联。此外，关联类型转换将会自动进行，方法 port() 会返回一个 int 类型，方法 hostname() 会返回一个 String 类型。  
+这种映射机制是完全可定制的，包括刚才介绍的自动类型转换也是足够灵活去覆盖大多数的 java 类型以及用户自定义类型。
+
+###<a id="useconfig">使用 Config 对象</a>
+现在，你可以创建一个ServerConfig 对象并且在代码中使用:
+```
+ServerConfig cfg = ConfigFactory.create(ServerConfig.class);
+System.out.println("Server " + cfg.hostname() + ":" + cfg.port() + " will run " + cfg.maxThreads());
+```
+###<a id="useano">使用 @DefaultValue 和 @Key 注解</a>
+你注意到了在上面的例子中指定了 @DefaultValue("42")  注解吗？
+```
+public interface ServerConfig extends Config {
+　　int port();
+　　String hostname();
+　　@DefaultValue("42")    // 这里
+　　int maxThreads();
+}
+```
+它适用于 maxThread 不存在于 properties 文件中的情况。由于 maxThreads() 方法返回一个 int，这个注解会自动转换成 int。
+使用注解时你可以定制属性的键名：
+```
+# ServerConfig.properties示例
+server.http.port=80
+server.host.name=foobar.com
+server.max.threads=100
+```
+此时，跟java应用中常见的命名方式一样，属性的名字使用“.”进行分割。由于我们使用的是“server.http.port”而不是“port”,我们就需要使用 @Key 注解来关联属性名和方法名。
+```
+/*
+ * 映射上面 properties 文件的 java 接口示例
+ */
+public interface ServerConfig extends Config {
+　　@Key("server.http.port")
+　　int port();
+　　@Key("server.host.name")
+　　String hostname();
+　　@Key("server.max.threads");
+　　@DefaultValue("42")
+　　int maxThreads();
+}
+```
+@DefaultValue 和 @Key 是使用 owner 的基础。使用 @DefaultValue 注解可以帮助你在开发过程中完全抛开属性文件，你可以在最后把配置文件加上或者把这步工作丢给最后一个开发者。
+
+###<a id="notdefi">未定义属性</a>
+假如你在映射接口中定义了一个不能与 properties 文件中任何一个属性相匹配的方法，并且这个方法没有使用 @DefaultValue 注解，这个时候会发生什么呢？比如你定义了ServerConfig类，如下：
+```
+public static interface ServerConfig extends Config {
+　　String hostname();
+　　int port();
+　　Boolean debugEnabled();
+}
+```
+假如没有任何 ServerConfig.properties 与之相关联，当你调用 String hostname() 方法是将会返回一个 null，调用 Boolean debugEnabled() 是也一样，因为 String 和 Boolean 都是 java 对象。但是，当我们调用 int port() 时，将会抛出 NullPointerException 异常。  
+那么你不想要 NullPointerException 异常的话，该怎么办？很简单，你可以定义一个默认值，比如你可以给一个 int 返回类型的设置 @DefaultValue("0") ，给boolean返回类型的设置@DefaultValue("false") 等等……
+
+
+
 
 
 #<a id="feature">功能特性</a>

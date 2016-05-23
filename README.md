@@ -283,7 +283,7 @@ assertEquals(System.getenv().get("HOME"), cfg.home());
 assertEquals(System.getenv().get("USER"), cfg.user());
 ```  
 
-#####<a id="interact">与加载策略的交互</a>  
+#####与加载策略的交互
 上面讲到的“引用属性”是属性加载机制中的附加功能。通过代码引入的属性在优先级上要高于通过 @Sources 注释的方式。假设有这样一个场景，你已通过 @Sources 定义你的配置文件，但是你又想让用户在代码中自己指定配置文件，这个时候怎么办呢？  
   
 ```
@@ -317,7 +317,7 @@ Sample cfg = ConfigFactory.create(Sample.class);
 print(cfg.helloMr("Luigi")); // will println 'Hello Mr. Luigi!'
 ```  
   
-#####<a id="forbit">禁用参数扩展</a>
+#####禁用参数扩展
 owner 支持用户关闭参数扩展，这可以通过使用 @DisableFeature 注解来实现。  
   
 ```
@@ -340,12 +340,202 @@ public interface Sample extends Config {
 }
 ```  
   
-
+###<a id="typeconvert">类型转换</a>
+owner API 支持原始类型和枚举类型的属性转换。当你定义映射接口时，你可以使用广泛的返回类型，并且他们会自动从 String 类型转换成原始类型或者枚举类型。  
   
+```
+// conversion happens from the value specified in the properties files (if available).
+int maxThreads();
+// conversion happens also from @DefaultValue
+@DefaultValue("3.1415")
+double pi();
+// enum values are case sensitive! java.util.concurrent.TimeUnit is an enum
+@DefaultValue("NANOSECONDS");
+TimeUnit timeUnit();
+```
   
+你可以在配置接口中将业务对象定义为返回类型，甚至是你自定义的对象，最简单的方式就是使用一个带 String 参数的 public 构造参数来定义你的业务对象：  
   
+```
+public class CustomType {
+　　private final String text;
+　　public CustomType(String text) {
+　　　　this.text = text;
+　　}
+　　public String getText() {
+　　　　return text;
+　　}
+}
+public interface SpecialTypes extends Config {
+　　@DefaultValue("foobar.txt")
+　　File sampleFile();
+　　@DefaultValue("http://owner.aeonbits.org")
+　　URL sampleURL();
+　　@DefaultValue("example")
+　　CustomType customType();
+　　@DefaultValue("Hello %s!")
+　　CustomType salutation(String name);
+}
+```  
   
+owner API 会将"example"传递给 CustomType 的构造函数并返回。
   
-
-
+#####数组和集合  
+owner 具有对 java 数组和集合的第一级支持，因此你可以这样定义属性：  
+  
+```
+public class MyConfig extends Config {
+　　@DefaultValue("apple, pear, orange")
+　　public String[] fruit();
+　　@Separator(";")
+　　@DefaultValue("0; 1; 1; 2; 3; 5; 8; 13; 21; 34; 55")
+　　public int[] fibonacci();
+　　@DefaultValue("1, 2, 3, 4")
+　　List<Integer> ints();
+　　@DefaultValue("http://aeonbits.org, http://github.com, http://google.com")
+　　MyOwnCollection<URL> myBookmarks();
+　　// Concrete class are allowed (in this case java.util.Stack)
+　　// when type is not specified <String> is assumed as default
+　　@DefaultValue("The Lord of the Rings,The Little Prince,The Da Vinci Code")
+　　Stack books();
+}
+```  
+  
+你可以通过对接口明确指定 Collection、 List、 Set、 SortedSet 或者 Vector、 Stack、 LinkedList 等具体实现（甚至你自己实现的 java 集合框架接口，只要在实现类中定义一个默认无参的构造函数）来使用数组对象、原始类型或者 java 集合（但是要注意，并不支持 Map 接口及其子接口）。  
+  
+默认情况下 woner 使用逗号（","）来分割数组和集合中的元素，但是你可以通过 @Separator 注解来指定不同的字符。假如你的属性有更复杂的拆分逻辑，你可以通过 @TokenizerClass 注解加上 Tokenizer 接口来自定义断词器类。例如：  
+  
+```
+public class MyConfig extends Config {
+　　@Separator(";")
+　　@DefaultValue("0; 1; 1; 2; 3; 5; 8; 13; 21; 34; 55")
+　　public int[] fibonacci();
+　　@TokenizerClass(CustomDashTokenizer.class)
+　　@DefaultValue("foo-bar-baz")
+　　public String[] withSeparatorClass();
+}
+public class CustomDashTokenizer implements Tokenizer {
+　　// this logic can be as much complex as you need
+　　@Override
+　　public String[] tokens(String values) {
+　　　　return values.split("-", -1);
+　　}
+}
+```  
+  
+@Separator 和 @TokenizerClass 能够作用在方法层面和接口层面，当只在方法层面指定时只对该方法有效，当在接口层面上指定时则对整个接口类生效。方法层面上指定的注解会覆盖类层面上的注解：  
+  
+```
+@Separator(";")
+public interface ArrayExample extends Config {
+　　// takes the class level @Separator
+　　@DefaultValue("1; 2; 3; 4")
+　　public int[] semicolonSeparated();
+　　// overrides the class-level @Separator(";")
+　　@Separator(",")
+　　@DefaultValue("1, 2, 3, 4")
+　　public int[] commaSeparated();
+　　// overrides the class level @Separator(";")
+　　@TokenizerClass(CustomDashTokenizer.class)
+　　@DefaultValue("1-2-3-4")
+　　public int[] dashSeparated();
+}
+```  
+  
+需要注意的是，不能在同一级别上同时使用 @Separator 和 @TokenizerClass，因为这两个注解实际上是在干同一件事！比如下面的例子将会抛出 UnsupportedOperationException 异常：  
+  
+```
+// @Separator and @TokenizerClass cannot be used together
+// on class level.
+@TokenizerClass(CustomCommaTokenizer.class)
+@Separator(",")
+public interface Wrong extends Config {
+　　// will throw UnsupportedOperationException!
+　　@DefaultValue("1, 2, 3, 4")
+　　public int[] commaSeparated();
+}
+public interface AlsoWrong extends Config {
+　　// will throw UnsupportedOperationException!
+　　// @Separator and @TokenizerClass cannot be
+　　// used together on method level.
+　　@Separator(";")
+　　@TokenizerClass(CustomDashTokenizer.class)
+　　@DefaultValue("0; 1; 1; 2; 3; 5; 8; 13; 21; 34; 55")
+　　public int[] conflictingAnnotationsOnMethodLevel();
+}
+```  
+  
+然而，即使在类层面上有冲突，woner 却能够在方法层面上进行纠正：  
+  
+```
+// @Separator and @TokenizerClass cannot be used together on class level.
+@Separator(";")
+@TokenizerClass(CustomDashTokenizer.class)
+public interface WrongButItWorks extends Config {
+　　// but this overrides the class level annotations
+　　// hence it will work!
+　　@Separator(";")
+　　@DefaultValue("1, 2, 3, 4")
+　　public int[] commaSeparated();
+}
+```  
+  
+当然，我们是不建议这么做的，毕竟这是一种错误的设置方法（可以理解为 owner 自身的 bug 吧）……  
+  
+#####@ConverterClass 注解  
+owner 通过提供 @ConverterClass 注解，使用户可以通过实现 Converter 接口指定自定义的转换逻辑。  
+  
+```
+interface MyConfig extends Config {
+　　@DefaultValue("foobar.com:8080")
+　　@ConverterClass(ServerConverter.class)
+　　Server server();
+　　@DefaultValue("google.com, yahoo.com:8080, owner.aeonbits.org:4000")
+　　@ConverterClass(ServerConverter.class)
+　　Server[] servers();
+}
+class Server {
+　　private final String name;
+　　private final Integer port;
+　　public Server(String name, Integer port) {
+　　　　this.name = name;
+　　　　this.port = port;
+　　}
+}
+public class ServerConverter implements Converter<Server> {
+　　public Server convert(Method targetMethod, String text) {
+　　　　String[] split = text.split(":", -1);
+　　　　String name = split[0];
+　　　　Integer port = 80;
+　　　　if (split.length >= 2)
+　　　　　　port = Integer.valueOf(split[1]);
+　　　　return new Server(name, port);
+　　}
+}
+MyConfig cfg = ConfigFactory.create(MyConfig.class);
+Server s = cfg.server(); // will return a single server
+Server[] ss = cfg.servers(); // it works also with collections
+```
+  
+在上面的例子中，我们调用 servers() 并返回一个 Server 对象数组，ServerConverter 会被调用多次以转换每一个元素，并且在任何情况下 ServerConverter  都将针对单个元素工作。  
+  
+#####owner 支持的类型  
+owner API支持的自动转换类型包括：  
+  
+1. 原始类型：boolean, byte, short, integer, long, float, double  
+2. 枚举类型：注意转换是区分大小写的，FOO != foo  
+3. java.lang.String  
+4. java.net.URL, java.net.URI  
+5. java.io.File：字符"~"将扩展到"user.home"系统属性  
+6. java.lang.Class：这很有用，比如你想加载JDBC驱动……  
+7. 任何声明了带一个 java.lang.String 参数的 public 构造函数的可实例化类  
+8. 任何声明了带一个 java.lang.Object 参数的 public 构造函数的可实例化类  
+9. 任何声明了 public static 方法 valueOf(java.lang.String) 且返回一个自身实例的类  
+10. 任何可通过 @ConverterClass 注解实例化的对象  
+11. 任何以上对象的集合：Set, List, SortedSet或者具体实现（比如 LinkedHashSet），但不支持 Map 和其子接口  
+  
+假如 owner API 无法映射你的业务对象，将会抛出 UnsupportedOperationException 异常，同时附带有用的描述来帮助你快速定位问题。  
+   
+你也可以通过使用这个 static 方法 PropertyEditorManager.registerEditor() 注册你自定义的 PropertyEditor 把文本属性转换成你的业务对象。请查看 PropertyEditorSupport ，它将对你实现一个 [PropertyEditor](http://docs.oracle.com/javase/7/docs/api/java/beans/PropertyEditorSupport.html) 很有帮助。  
+  
 

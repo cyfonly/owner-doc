@@ -538,4 +538,186 @@ owner API支持的自动转换类型包括：
    
 你也可以通过使用这个 static 方法 PropertyEditorManager.registerEditor() 注册你自定义的 PropertyEditor 把文本属性转换成你的业务对象。请查看 PropertyEditorSupport ，它将对你实现一个 [PropertyEditor](http://docs.oracle.com/javase/7/docs/api/java/beans/PropertyEditorSupport.html) 很有帮助。  
   
+###<a id="variextend">变量扩展</a>  
+有时候从另外一个属性扩展到其他属性是很有用的，我们来看看下面的 properties 文件：  
+  
+```
+story=The ${animal} jumped over the ${target}
+animal=quick ${color} fox
+target=${target.attribute} dog
+target.attribute=lazy
+color=brown
+```  
+  
+其关联的映射接口为：  
+  
+```
+public interface ConfigWithExpansion extends Config {
+　　String story();
+}
+```  
+  
+然后属性 story 会被扩展为 The quick brown fox jumped over the lazy dog。  
+  
+使用注解时这依然有效，但是你需要在方法上指定每一个属性：  
+  
+```
+public interface ConfigWithExpansion　extends Config {
+　　@DefaultValue("The ${animal} jumped over the ${target}")
+　　String story();
+　　@DefaultValue("quick ${color} fox")
+　　String animal();
+　　@DefaultValue("${target.attribute} dog")
+　　String target();
+　　@Key("target.attribute")
+　　@DefaultValue("lazy")
+　　String targetAttribute();
+　　@DefaultValue("brown")
+　　String color();
+}
+ConfigWithExpansion conf = ConfigFactory.create(ConfigWithExpansion.class);
+String story = conf.story();
+```  
+  
+有时候你也许想要扩展系统属性或者环境变量，这可以通过引用来实现：  
+  
+```
+public interface SystemPropertiesExample　extends Config {
+　　@DefaultValue("Welcome: ${user.name}")
+　　String welcomeString();
+　　@DefaultValue("${TMPDIR}/tempFile.tmp")
+　　File tempFile();
+}
+SystemPropertiesExample conf = ConfigFactory.create(SystemPropertiesExample.class,System.getProperties(),System.getenv());
+String welcome = conf.welcomeString();
+File temp = conf.tempFile();
+```
+  
+######禁用属性扩展  
+你可以使用 @DisableFeature 注解来禁用变量扩展特性：  
+  
+```
+public interface Sample extends Config {
+　　@DefaultValue("Earth")
+　　String world();
+　　@DisableFeature(VARIABLE_EXPANSION)
+　　@DefaultValue("Hello ${world}.")
+　　// will return the string "Hello ${world}."
+　　String sayHello();
+}
+```  
+  
+同样，@DisableFeature 可以定义在接口和方法层面。当定义在接口层面上时，对接口下的所有方法都生效。  
+  
+#####@Key 变量扩展  
+通常情况下，我们需要把完全一样的工程部署在测试环境，经过测试后才会部署到生产环境。在这个过程中，我们会使用部署工具来保证程序（包括配置信息）没有发生变化。这个工程包含所有的运行时所需配置，针对不同的运行环境（测试/生产），管理员或者应用自身需要选择不同的配置。配置会大大影响程序如何工作，所以它必须和其他所有源代码一样需要严格控制。  
+  
+在 v1.0.6 之后的版本，已经支持在 @Key 注释上使用变量扩展。这种方式能够很好的应对上述情况。我们在同一个配置文件中配置好所有环境的配置信息，让后让管理员或者应用自身来选择合适的配置。  
+  
+假如在你的 XML 配置文件中，你定义了三个不同环境：开发环境、测试环境和生产环境，如下：  
+  
+```
+<servers>
+　　　　<dev> <!-- development environment -->
+　　　　<name>Development</name>
+　　　　<hostname>devhost</hostname>
+　　　　<port>6000</port>
+　　　　<user>myuser1</user>
+　　　　<password>mypass1</password>
+　　</dev>
+　　<uat> <!-- user acceptance test environment -->
+　　　　<name>User Acceptance Test</name>
+　　　　<hostname>uathost</hostname>
+　　　　<port>60020</port>
+　　　　<user>myuser2</user>
+　　　　<password>mypass2</password>
+　　</uat>
+　　<prod> <!--  production environment -->
+　　　　<name>Production</name>
+　　　　<hostname>prod-host</hostname>
+　　　　<port>600</port>
+　　　　<user>prod-user</user>
+　　　　<password>secret</password>
+　　</prod>
+</servers>
+```
+  
+或者一个 properties 文件，如下：  
+  
+```
+servers.dev.name=Development
+servers.dev.hostname=devhost
+servers.dev.port=6000
+servers.dev.user=myuser1
+servers.dev.password=mypass1
+
+servers.uat.name=User Acceptance Test
+servers.uat.hostname=uathost
+servers.uat.port=60020
+servers.uat.user=myuser2
+servers.uat.password=mypass2
+
+servers.prod.name=Production
+servers.prod.hostname=prod-host
+servers.prod.port=600
+servers.prod.user=prod-user
+servers.prod.password=secret
+```
+  
+接下来你可以把你的映射接口定义为：  
+  
+```
+@Sources("classpath:org/aeonbits/owner/variableexpansion/KeyExpansionExample.xml")
+public interface ExpandsFromAnotherKey extends Config {
+　　@DefaultValue("dev")
+　　String env();
+　　@Key("servers.${env}.name")
+　　String name();
+　　@Key("servers.${env}.hostname")
+　　String hostname();
+　　@Key("servers.${env}.port")
+　　Integer port();
+　　@Key("servers.${env}.user")
+　　String user();
+　　@Key("servers.${env}.password")
+　　String password();
+}
+```
+  
+请注意，这个例子中，我把 env() 定义默认值为 "dev"，所以 ${env} 将会使用 "dev" 作为默认值。  
+  
+还有另外一种方法，你可以在创建 Config 对象时指定 ${env} 的值：  
+  
+```
+Map myVars = new HashMap();
+myVars.put("env", "uat"); // here!
+ExpandsFromAnotherKey cfg = ConfigFactory.create(ExpandsFromAnotherKey.class, myVars); // here!
+assertEquals("User Acceptance Test", cfg.name());
+assertEquals("uathost", cfg.hostname());
+assertEquals(new Integer(60020), cfg.port());
+assertEquals("myuser2", cfg.user());
+assertNull("mypass2", cfg.password());
+```
+  
+通过这种方式，你就可以选择使用哪个环境的配置。  
+  
+###<a id="reload">重加载和热重载</a>  
+owner 支持程序重加载，也支持自动热重载。实现热重载有两种方式：同步和异步。  
+  
+#####程序化重加载  
+你可以手动要求配置对象执行加载，这可以通过 Reloadable 来实现：  
+  
+```
+@Sources{...}
+interface MyConfig extends Reloadable {
+　　String someProperties();
+}
+MyConfig cfg = ConfigFactory.create(MyConfig.class);
+cfg.reload();
+```
+  
+cfg.reload() 会像对象初始化时一样重新加载所有属性，假如配置文件被修改过，重加载后的将会是最新的属性值。Reloadable 接口继承自 Config 。  
+  
+
+
 

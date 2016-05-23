@@ -718,6 +718,8 @@ cfg.reload();
   
 cfg.reload() 会像对象初始化时一样重新加载所有属性，假如配置文件被修改过，重加载后的将会是最新的属性值。Reloadable 接口继承自 Config 。  
   
+![](http://owner.aeonbits.org/img/config-hierarchy.png)  
+  
 
 
 

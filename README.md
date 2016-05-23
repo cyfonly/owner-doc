@@ -11,7 +11,7 @@ owner 是个超轻量 java 库（jar包）， 旨在摒弃 properties 文件的�
 * 灵活：选择你需要的功能，屏蔽你不需要的；容易上手，具有丰富的文档 
 
 #目录
-- [owner 是什么](#owner)
+- [owner是什么](#owner)
 - 安装
 	+ maven
 	+ java 8

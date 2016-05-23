@@ -1309,4 +1309,129 @@ assertEquals(new Double("1.2345"), cfg.someDouble());
 assertNull(cfg.nullsByDefault());
 ```
   
-以上所讲的事件通知机制允许用户进行一些基本校验，将来会提供一个更简单、更强大的校验机制，而事件机制将会其底层支撑。
+以上所讲的事件通知机制允许用户进行一些基本校验，将来会提供一个更简单、更强大的校验机制，而事件机制将会其底层支撑。  
+  
+###<a id="singleton">单例</a>  
+  
+把配置设计成单例对于应用程序来说是很有意义的。  
+  
+绝大多数情况下，你会采用以下方式来实例化 Config 对象：  
+  
+```
+MyConfig cfg = ConfigFactory.create(MyConfig.class);
+```
+  
+人们倾向于这样使用：  
+  
+```
+class MyApp {
+　　private static MyConfig cfg =ConfigFactory.create(MyConfig.class);
+
+　　public void doSomething() {
+　　　　UserInterface ui = new UserInterface(cfg);
+　　　　Model model = new Model(cfg);
+　　　　ui.setModel(model);
+　　　　// do something more with cfg...
+　　}
+}
+```
+  
+这样做的问题在于，在复杂的应用程序内部传递 cfg 对象并不实效，并且当你在多个地方调用 ConfigFactory.create() 时将会创建多个 cfg 对象实例。这并不是你想要的。  
+  
+几个例子，假如你有一个 J2EE WEB 项目，在你的 servlets 里有个 Config 对象，你需要在 web.xml 中配置一个 ServletContextListener 并且把配置文件对象对象绑定到 ServletContext，然后在 servlets 中获取 cfg 对象。  
+  
+示例：  
+```
+public class MyServletContextListener
+　　implements ServletContextListener {
+
+　　public void contextInitialized(ServletContextEvent sce) {
+　　　　MyConfig cfg = ConfigFactory.create(MyConfig.class);
+　　　　sce.getServletContext().setAttribute("com.acme.foo.bar.MyConfig", cfg);
+　　}
+
+　　public void contextDestroyed(ServletContextEvent sce) {
+　　　　sce.getServletContext().removeAttribute("com.acme.foo.bar.MyConfig");
+　　}
+}
+
+// then in your servlets
+
+public class MyServlet extends HttpServlet {
+　　private MyConfig cfg = null;
+
+　　public void init(ServletConfig config)　throws ServletException {
+　　　　cfg = (MyConfig)config.getServletContext().getAttribute("com.acme.foo.bar.MyConfig");
+    }
+
+　　public void destroy() {
+　　　　cfg = null;
+　　}
+
+　　protected void doGet(HttpServletRequest req,HttpServletResponse resp)
+　　　　throws ServletException, IOException {
+
+　　　　// do something with cfg;
+    }
+}
+```
+  
+我并不喜欢上面的例子，因为这是一种依赖注入机制（你并不需要一个框架来实现 IoC）并且我常通过单例来实现。然而，这依然会有大量的代码，样板代码，而这正式 owner 所摒弃的。  
+  
+因此，owner 提供了一种单例模式，我叫它 ConfigCache，因为它并不仅仅是个单例。  
+  
+#####ConfigCache  
+  
+对于 ConfigFactory 我想大家现在都很熟悉了：  
+  
+```
+MyConfig instance = ConfigFactory.create(MyConfig.class);
+```
+  
+现在你可以用同样的方式使用 ConfigCache：  
+  
+```
+MyConfig instance = ConfigCache.getOrCreate(MyConfig.class);
+```
+  
+它们的区别在于，每次使用 ConfigFactory 时都会创建一个新的 MyConfig 实例，但使用 ConfigCache 时，实例是从内部缓存中返回的。  
+  
+```
+MyConfig firstFromFactory = ConfigFactory.create(MyConfig.class);
+MyConfig secondFromFactory = ConfigFactory.create(MyConfig.class);
+// firstFromFactory not same as secondFromFactory
+
+MyConfig firstFromCache = ConfigCache.getOrCreate(MyConfig.class);
+MyConfig secondFromCache = ConfigCache.getOrCreate(MyConfig.class);
+// firstFromCache same as secondFromCache
+```
+  
+你可以给每个实例分配id：  
+  
+```
+MyConfig firstFromCache = ConfigCache.getOrCreate("foo", MyConfig.class);
+MyConfig secondFromCache = ConfigCache.getOrCreate("foo", MyConfig.class);
+MyConfig thirdFromCache = ConfigCache.getOrCreate("bar", MyConfig.class);
+// firstFromCache same as secondFromCache
+// thirdFromCache not same as secodFromCache or firstFromCache
+```
+  
+id 是 java.lang.Object 类型，但是你可以使用 String 来作为 id，比如上面的名字。  
+  
+至于 ConfigFactory，你可以传递一个引用列表给 ConfigCache。事实上 ConfigCache 和 ConfigFactory 非常相似：  
+  
+```
+public final class org.aeonbits.owner.ConfigCache {
+　　public static <T extends Config> T getOrCreate(Class<? extends T> clazz, Map<?, ?>... imports);
+　　public static <T extends Config> T getOrCreate(Factory factory, Class<? extends T> clazz, Map<?, ?>... imports);
+　　public static <T extends Config> T getOrCreate(Object id, Class<? extends T> clazz, Map<?, ?>... imports);
+　　public static <T extends Config> T getOrCreate(Factory factory, Object id, Class<? extends T> clazz, Map<?, ?>... imports);
+　　public static <T extends Config> T get(Object id);
+　　public static <T extends Config> T add(Object id, T config);
+　　public static void clear();
+　　public static <T extends Config> T remove(Object id);
+}
+```
+  
+ConfigCache 是线程安全的，你无需担心并发访问问题。  
+  

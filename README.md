@@ -12,7 +12,7 @@ owner 是个超轻量 java 库（jar包）， 旨在摒弃 properties 文件的�
 
 #功能
 > 简单的事情就应该是简单的，复杂的事情就应该是可能的。  
-> 　　　　　　　　　　　　　—— 天才计算机大师 艾伦.凯 
+> 　　　　　　　　　　　　—— 天才计算机大师 艾伦.凯 
 
 这也是开发 owner 的宗旨。  
 owner是个功能丰富的 API，但在增加更多的功能之前，我们尽可能的保持它现有基本用法的简单化。 
@@ -50,9 +50,42 @@ owner 是一个 java 库，即 jar 包。owner 可以在 Maven 仓库中获取�
 　　</dependency>
 </dependencies>  
 ```
+如果有更新的版本，只需要将新版本号替换 1.0.8 即可。写这篇文章时最新版本就是 1.0.8，但在使用时你最好检查下是否有新版本。  
+当前很多 IDE 都能很好的集成Maven，所以在 pom.xml 文件中增加了上述依赖并刷新项目后，你就可以使用 owner 了。
 
+#Java 8
+java 8 引入了一些新的语言特性，比如接口中的 default methods。这种情况下 artifactId  需要使用 owber-java8 ：
+```
+<dependencies>
+　　<dependency>
+　　　　<groupId>org.aeonbits.owner</groupId>
+　　　　<artifactId>owner-java8</artifactId>
+　　　　<version>1.0.6</version>
+　　</dependency>
+</dependencies>
+```
+由于 owner-java8 依赖于 owner，所以你不需要在 Maven 依赖中同时指定它们两个。
 
-
-
+#基本用法
+要使用 owner API，你需要先定义一个与 properties 文件相关联的 java 接口类。
+假设你定义的 properties 文件名字为 ServerConfig.properties：
+```
+port=80
+hostname=foobar.com
+maxThreads=100
+```
+你可以在同一个 package 下定义一个简单的 java 接口类 ServerConfig.java 来访问 properties 文件：
+```
+import org.aeonbits.owner.Config;
+public interface ServerConfig extends Config {
+　　int port();
+　　String hostname();
+　　@DefaultValue("42")
+　　int maxThreads();
+}
+```
+注意上面的接口要继承 Config，这是一个让 owner 正常工作的标记接口。由于设计这个接口的目的是把属性映射到一小段代码中，我们不妨把这个接口叫做“属性映射接口”或者“映射接口”。  
+  
+  
 
 

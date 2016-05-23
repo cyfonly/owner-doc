@@ -1034,28 +1034,164 @@ ConfigFactory.setProperty("myurl", "http://somewhere.com/conf.properties");
 MyConfig cfg = ConfigFactory.create(MyConfig.class);
 ```
   
+###<a id="xml">XML支持</a>  
+  
+JDK 1.5之后 java 属性支持 XML 格式（通过 loadFromXML() 和 storeToXML()），而 owner 也没有理由不提供 XML 支持。事实上，owner 甚至做的更好。  
+  
+#####java XML 格式  
+java.util.Properties 类支持 XML 格式如下：  
+  
+```
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
+<properties>
+　　<comment>this is an example</comment>
+　　<entry key="server.ssh.alive.interval">60</entry>
+　　<entry key="server.ssh.address">127.0.0.1</entry>
+　　<entry key="server.http.port">80</entry>
+　　<entry key="server.http.hostname">localhost</entry>
+　　<entry key="server.ssh.user">admin</entry>
+　　<entry key="server.ssh.port">22</entry>
+</properties>
+```
+  
+有没有注意到上面的是非结构化的 XML 格式？  
+  
+owner 支持加载 XML 文件作为配置属性，但支持更加格式化的 XML 格式，这可以根据用户的个人喜好来定义。  
+  
+#####用户指定 XML格式  
+假如你不喜欢 java 默认风格的 XML 格式，你可以自定义 XML 格式：  
+  
+```
+<server>
+　　<http port="80">
+　　　　<hostname>localhost</hostname>
+　　</http>
+　　<ssh port="22">
+　　　　<address>127.0.0.1</address>
+　　　　<alive interval="60"/>
+　　　　<user>admin</user>
+　　</ssh>
+</server>
+```
+  
+对 owner而言，上面的例子相当于在前一节中列出的示例。XML 元素和 XML 属性会被转换成属性名，元素值和属性值会被转换成 properties 值。也就是说上面的配置相当于：  
+  
+```
+server.http.port=80
+server.http.hostname=localhost
+server.ssh.port=22
+server.ssh.address=127.0.0.1
+server.ssh.alive.interval=60
+server.ssh.user=admin
+```
+  
+#####加载 XML  
+  
+owner 加载 XML 的方式和加载 properties 文件是一样的。加入你定义了一个映射接口 foo.bar.ServerConfig.java，只需在 classpath 下创建 foo.bar.ServerConfig.xml 文件；或者你指定 @Sources 注解指向 XML 文件的 RUL。owner 能够识别 .xml 后缀并从 XML 文件中加载配置。  
+  
+对应以上 XML 配置的映射接口如下：  
+  
+```
+interface ServerConfig extends Config {
 
+　　@Key("server.http.port")
+　　int httpPort();
 
-　　
-　　　　
-　　　　
+　　@Key("server.http.hostname")
+　　String httpHostname();
 
+　　@Key("server.ssh.port")
+　　int sshPort();
 
+　　@Key("server.ssh.address")
+　　String sshAddress();
 
+　　@Key("server.ssh.alive.interval")
+　　int aliveInterval();
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+　　@Key("server.ssh.user")
+　　String sshUser();
+}
+```
+  
+假如你想把一个 Config 对象存储到 XML 文件中，你需要了解 Accessible 接口中的 storeToXML 方法。  
+  
+###<a id="event">事件支持</a>  
+  
+热加载是个很酷的功能，然而如果能知道哪些属性值发生了变化将会更有趣，这样你就可以重新配置受影响的 services 即可。owner 实现了一个功能丰富的事件系统，使你了解什么时候执行了重加载，什么时候属性改变了，并且让你验证新的值是否适应你的应用要求，假如不符合，你就可以进行回滚这个属性（或整个属性集合）的变化。  
+  
+#####监听重载  
+  
+在重载和热加载那个章节就说过，owner 支持程序加载和自动加载。两种情况下都会发生加载事件。  
+  
+当加载事件发生时如果你想得到通知，就要继承 Reloadable，它暴露了一些注册 ReloadListener 的方法。你也可以实现 TransactionalReloadListener，它会在加载生效之前通知你，这样你就可以检查哪些属性发生了变化，并在这些变化不适用于你的程序时进行回滚。  
+  
+![](http://owner.aeonbits.org/img/reload-event.png)  
+  
+Reloadable 接口允许增加或移除 ReloadListener 对象。  
+  
+ReloadListener 接口定义了一个 reloadPerformed() 方法来接收 ReloadEvent，ReloadEvent 包括了所有 oldProperties、newProperties 和一个 PropertyChangeEvent （每个变化的属性对应一个）列表，PropertyChangeEvent 则包含 propertyName、oldValue 和 newValue。  
+  
+当我们调用 Reloadable.addReloadListener() 方法时，它会传递一个 TransactionalReloadListener 实例，TransactionalReloadListener 继承了 ReloadListener 并增加了一个 beforeReload() 方法。这个监听器在加载已经触发但改变生效之间收到通知信息。这种情况下监听器就可以检查发生的变化及是否接收变化，它能触发 RollbackBatchException 异常，此时所有变化都将无效，保持当前值。当 RollbackBatchException  被抛出后 ，由于监听器终止了加载所以 ReloadListener.reloadPerformed() 将不会被调用。  
+  
+举个例子：  
+  
+```
+@Sources("Example.properties")
+interface MyConfig extends Reloadable {
+　　@DefaultValue("5")
+　　Integer someInteger();
+　　@DefaultValue("foobar")
+　　String someString();
+　　@DefaultValue("3.14")
+　　Double someDouble();
+　　String nullsByDefault();
+}
+MyConfig cfg = ConfigFactory.create(MyConfig.class);
+final boolean[] reloadPerformed = new boolean[] {false};
+cfg.addReloadListener(new TransactionalReloadListener() {
+　　public void beforeReload(ReloadEvent event)　throws RollbackBatchException {
+　　　　String notAllowedValue = "42";
+　　　　String newSomeInteger = event.getNewProperties().getProperty("someInteger");
+　　　　// 42 makes the reload to rollback completely!
+　　　　if (notAllowedValue.equals(newSomeInteger))
+　　　　　　throw new RollbackBatchException("42 is not allowed for property 'someInteger'");
+　　}
+    public void reloadPerformed(ReloadEvent event) {
+　　　　reloadPerformed[0] = true;
+　　}
+});
+// we update the properties file in the filesystem
+File target = new File("Example.properties");
+save(target, new Properties() { {
+　　setProperty("someInteger", "41");
+　　setProperty("someString", "bazbar");
+　　setProperty("someDouble", "2.718");
+　　setProperty("nullsByDefault", "NotNullNow");
+}});
+cfg.reload();
+// reload happened
+assertTrue(reloadPerformed[0]);
+assertEquals(new Integer(41), cfg.someInteger());
+assertEquals("bazbar", cfg.someString());
+assertEquals(new Double("2.718"), cfg.someDouble());
+assertNotNull(cfg.nullsByDefault());
+reloadPerformed[0] = false; // reset the flag
+save(target, new Properties() { {
+　　setProperty("someInteger", "42"); // not allowed!
+　　setProperty("someString", "blahblah");
+　　setProperty("someDouble", "1.234");
+}});
+cfg.reload();
+// reload was rolled back since 42 is not allowed
+assertFalse(reloadPerformed[0]);
+assertEquals(new Integer(41), cfg.someInteger());
+assertEquals("bazbar", cfg.someString());
+assertEquals(new Double("2.718"), cfg.someDouble());
+assertNotNull(cfg.nullsByDefault());
+```
+  
 #####监听属性改变  
   
 当用户通过 Mutable 接口中声明的方法改变属性、或者重加载发生时PropertyChangeEvent 就会发生。要在属性改变事件发生时获得通知，你的接口必须继承暴露了注册 PropertyChangeListener 方法的 Mutable。 你也可以实现 TransactionalPropertyChangeListener，它会在属性改变生效之前通知你，这样你就可以检查哪些属性发生了变化，并在这些变化不适用于你的程序时进行单个回滚或者全部回滚。  

@@ -24,7 +24,7 @@ owner 是个超轻量 java 库（jar包）， 旨在摒弃 properties 文件的�
 - <a href="#feature">功能特性</a>
 	+ <a href="#loadstra">加载策略</a>
 	+ <a href="#import">引用属性</a>
-	+ 参数化属性
+	+ <a href="#param">参数化属性</a>
 	+ 类型转换
 	+ 变量扩展
 	+ 加载和热加载
@@ -42,7 +42,7 @@ owner 是一个 java 库，旨在减少通过 properties 文件来处理应用�
 #<a id="install">安装</a>
 owner 是一个 java 库，即 jar 包。owner 可以在 Maven 仓库中获取，当然你也可以从这个连接下载它的库 jar 包、javadoc.jar、sources.jar 或者包含源码及 javadocs 的文件。下载好之后，你就需要配置你的 IDE 了。一般来说你只需要在 CLASSPATH 环境变量中引入它的 jar 包。
 
-####<a id="maven">Maven</a>
+###<a id="maven">Maven</a>
 在 Maven 项目中引用非常简单，只需要在项目 pom.xml 文件中添加以下依赖：
 ```
 <dependencies>
@@ -56,7 +56,7 @@ owner 是一个 java 库，即 jar 包。owner 可以在 Maven 仓库中获取�
 如果有更新的版本，只需要将新版本号替换 1.0.8 即可。写这篇文章时最新版本就是 1.0.8，但在使用时你最好检查下是否有新版本。  
 当前很多 IDE 都能很好的集成Maven，所以在 pom.xml 文件中增加了上述依赖并刷新项目后，你就可以使用 owner 了。
 
-####<a id="java8">Java 8</a>
+###<a id="java8">Java 8</a>
 java 8 引入了一些新的语言特性，比如接口中的 default methods。这种情况下 artifactId  需要使用 owber-java8 ：
 ```
 <dependencies>
@@ -89,20 +89,20 @@ public interface ServerConfig extends Config {
 ```
 注意上面的接口要继承 Config，这是一个让 owner 正常工作的标记接口。由于设计这个接口的目的是把属性映射到一小段代码中，我们不妨把这个接口叫做“属性映射接口”或者“映射接口”。  
   
-####<a id="mapping">映射机制</a>
+###<a id="mapping">映射机制</a>
 由于 properties 文件和 java 接口类有相同的名字且都在同一个包下面，owner API 能够自动把两者关联起来。  
   
 举个例子，假如你的映射接口叫做 com.foo.bar.ServerConfig，owner 会试着从类路径中把它关联到 com.foo.bar.ServerConfig.properties。同样，在 properties 文件中定义的属性名也会自动和 java 类中相同名字的方法相关联。比如属性文件中的属性 port 会和 java 类中的方法 int port()关联，属性 hostname 会和方法 String hostname() 关联。此外，关联类型转换将会自动进行，方法 port() 会返回一个 int 类型，方法 hostname() 会返回一个 String 类型。  
   
 这种映射机制是完全可定制的，包括刚才介绍的自动类型转换也是足够灵活去覆盖大多数的 java 类型以及用户自定义类型。
 
-####<a id="useconfig">使用 Config 对象</a>
+###<a id="useconfig">使用 Config 对象</a>
 现在，你可以创建一个ServerConfig 对象并且在代码中使用:
 ```
 ServerConfig cfg = ConfigFactory.create(ServerConfig.class);
 System.out.println("Server " + cfg.hostname() + ":" + cfg.port() + " will run " + cfg.maxThreads());
 ```
-####<a id="useano">使用 @DefaultValue 和 @Key 注解</a>
+###<a id="useano">使用 @DefaultValue 和 @Key 注解</a>
 你注意到了在上面的例子中指定了 @DefaultValue("42")  注解吗？
 ```
 public interface ServerConfig extends Config {
@@ -137,7 +137,7 @@ public interface ServerConfig extends Config {
 ```
 @DefaultValue 和 @Key 是使用 owner 的基础。使用 @DefaultValue 注解可以帮助你在开发过程中完全抛开属性文件，你可以在最后把配置文件加上或者把这步工作丢给最后一个开发者。
 
-####<a id="notdefi">未定义属性</a>
+###<a id="notdefi">未定义属性</a>
 假如你在映射接口中定义了一个不能与 properties 文件中任何一个属性相匹配的方法，并且这个方法没有使用 @DefaultValue 注解，这个时候会发生什么呢？比如你定义了ServerConfig类，如下：
 ```
 public static interface ServerConfig extends Config {
@@ -173,7 +173,7 @@ owner API 支持一系列功能，如下：
 
 新特性的开发不希望将已有特性变得复杂，版本的向后兼容也在我们的目标当中。
 
-####<a id="loadstra">加载策略</a>
+###<a id="loadstra">加载策略</a>
 properties 文件和映射接口的关联是通过 owner API 匹配类名和文件名（.properties）来实现的，当然这个逻辑是可以根通过一些额外的注解来实现用户个性化的需求。
 ```
 @Sources({ "file:~/.myapp.config", 
@@ -219,7 +219,7 @@ public interface ServerConfig extends Config {
   
 @Sources注解通过语法 file:${user.home}/.myapp.config （通过'user.home' 系统属性得到解决）或者 file:${HOME}/.myapp.config （通过$HOME 环境变量得到解决）考虑系统属性或环境变量。前面例子中使用的“~”是另一个变量扩展的例子，它等同于 ${user.home}。  
 
-####<a id="import">引用属性</a>
+###<a id="import">引用属性</a>
 你可以使用另外的机制来加载属性到映射接口中，那就是在调用 ConfigFactory.create() 时人工指定一个属性对象：  
   
 ```
@@ -305,7 +305,7 @@ public static void main(String[] args) {
   
 在上例中，用户指定的 properties 文件将会重写通过 @Sources 注解加载的 properties 文件中的同名属性。很多命令行工具会使用这种方式，它允许用户在命令行中重写默认配置。（这仅针对1.0.3.1及更高级的版本，在1.0.3.1版本之前引用属性优先级比从 properties 文件中加载的要低。这在1.0.3.1作出改变，并将在以后的版本中都采用这种方式）  
   
-####<a id="param">参数化属性</a>
+###<a id="param">参数化属性</a>
 owner 另外一个杰出的特性，就是它允许在方法接口上提供参数。属性值应当遵循 java.util.Formatter 类指定的位置计数规则。  
   
 ```

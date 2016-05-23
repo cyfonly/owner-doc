@@ -156,7 +156,7 @@ public static interface ServerConfig extends Config {
 这也是开发 owner 的宗旨。  
 owner是个功能丰富的 API，但在增加更多的功能之前，我们尽可能的保持它现有基本用法的简单化。 
 owner API 支持一系列功能，如下：
-* <a href="#loadstra">加载策略</a>
+* 加载策略
 * 引用属性
 * 参数化属性
 * 类型转换
@@ -172,7 +172,7 @@ owner API 支持一系列功能，如下：
 
 新特性的开发不希望将已有特性变得复杂，版本的向后兼容也在我们的目标当中。
 
-#<a id="loadstra">加载策略</a>
+###<a id="loadstra">加载策略</a>
 properties 文件和映射接口的关联是通过 owner API 匹配类名和文件名（.properties）来实现的，当然这个逻辑是可以根通过一些额外的注解来实现用户个性化的需求。
 ```
 @Sources({ "file:~/.myapp.config", 

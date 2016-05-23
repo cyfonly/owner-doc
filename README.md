@@ -11,7 +11,7 @@ owner 是个超轻量 java 库（jar包）， 旨在摒弃 properties 文件的�
 * 灵活：选择你需要的功能，屏蔽你不需要的；容易上手，具有丰富的文档 
 
 #目录
-- [owner是什么](#owner)
+- <a href="#owner">owner 是什么</a>
 - 安装
 	+ maven
 	+ java 8
@@ -35,7 +35,7 @@ owner 是个超轻量 java 库（jar包）， 旨在摒弃 properties 文件的�
 	+ 事件支持
 	+ 单例
 
-#<span id="owner">owner 是什么</span>
+#<a id="owner">owner 是什么</a>
 owner 是一个 java 库，旨在减少通过 properties 文件来处理应用程序配置的代码。它已经打包成一个 jar 文件，你也可以从 Maven 中央仓库下载。开发此 API 是受 GWT i18n 启迪（[点此查看](http://www.gwtproject.org/doc/latest/DevGuideI18nConstants.html)）。使用 GWT i18n 来加载配置文件有一个问题，那就是它仅仅适用于客户端代码（JavaScript），不是标准的 java 类。此外，GWT 是一个大的库，它是为了很多用途而设计，并不仅仅针对配置文件。  
 
 #安装

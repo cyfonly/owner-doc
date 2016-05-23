@@ -22,7 +22,7 @@ owner 是个超轻量 java 库（jar包）， 旨在摒弃 properties 文件的�
 	+ <a href="#notdefi">未定义属性</a>
 - <a href="#feature">功能特性</a>
 	+ <a href="#loadstra">加载策略</a>
-	+ 引用属性
+	+ <a href="#import">引用属性</a>
 	+ 参数化属性
 	+ 类型转换
 	+ 变量扩展
@@ -217,6 +217,70 @@ public interface ServerConfig extends Config {
 因此基本上我们在多个 properties 文件中执行合并，且第一个properties 文件会重写后面的文件的相同属性值。  
   
 @Sources注解通过语法 file:${user.home}/.myapp.config （通过'user.home' 系统属性得到解决）或者 file:${HOME}/.myapp.config （通过$HOME 环境变量得到解决）考虑系统属性或环境变量。前面例子中使用的“~”是另一个变量扩展的例子，它等同于 ${user.home}。  
+
+###<a id="import">引用属性</a>
+你可以使用另外的机制来加载属性到映射接口中，那就是在调用 ConfigFactory.create() 时人工指定一个属性对象：  
+  
+```
+public interface ImportConfig extends Config {
+　　@DefaultValue("apple")
+　　String foo();
+　　@DefaultValue("pear")
+　　String bar();
+　　@DefaultValue("orange")
+　　String baz();
+}
+// 然后...
+Properties props = new Properties();
+props.setProperty("foo", "pineapple");
+props.setProperty("bar", "lime");
+ImportConfig cfg = ConfigFactory.create(ImportConfig.class, props); // 属性引用!
+assertEquals("pineapple", cfg.foo());
+assertEquals("lime", cfg.bar());
+assertEquals("orange", cfg.baz());
+```
+  
+当然你可以同时指定多个需要引用的属性：  
+  
+```
+ImportConfig cfg = ConfigFactory.create(ImportConfig.class, props1, props2, ...);
+```
+  
+假如 props1 和 props2 同时指定了同一个属性的值，那么首先指定的值将会被采用。  
+  
+```
+Properties p1 = new Properties();
+p1.setProperty("foo", "pineapple");
+p1.setProperty("bar", "lime");
+Properties p2 = new Properties();
+p2.setProperty("bar", "grapefruit");
+p2.setProperty("baz", "blackberry");
+ImportConfig cfg = ConfigFactory.create(ImportConfig.class, p1, p2); // 属性引用!
+assertEquals("pineapple", cfg.foo());
+// p1先指定，所以这是 lime 而不是 grapefruit
+assertEquals("lime", cfg.bar()); 
+assertEquals("blackberry", cfg.baz());
+```  
+此外，你可以非常方便的引用系统属性或环境变量：  
+  
+```
+interface SystemEnvProperties extends Config {
+　　@Key("file.separator")
+　　String fileSeparator();
+　　@Key("java.home")
+　　String javaHome();
+　　@Key("HOME")
+　　String home();
+　　@Key("USER")
+　　String user();
+　　void list(PrintStream out);
+}
+SystemEnvProperties cfg = ConfigFactory.create(SystemEnvProperties.class, System.getProperties(), System.getenv());
+assertEquals(File.separator, cfg.fileSeparator());
+assertEquals(System.getProperty("java.home"), cfg.javaHome());
+assertEquals(System.getenv().get("HOME"), cfg.home());
+assertEquals(System.getenv().get("USER"), cfg.user());
+```  
 
 
   

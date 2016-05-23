@@ -41,7 +41,7 @@ owner 是一个 java 库，旨在减少通过 properties 文件来处理应用�
 #<a id="install">安装</a>
 owner 是一个 java 库，即 jar 包。owner 可以在 Maven 仓库中获取，当然你也可以从这个连接下载它的库 jar 包、javadoc.jar、sources.jar 或者包含源码及 javadocs 的文件。下载好之后，你就需要配置你的 IDE 了。一般来说你只需要在 CLASSPATH 环境变量中引入它的 jar 包。
 
-##<a id="maven">Maven</a>
+###<a id="maven">Maven</a>
 在 Maven 项目中引用非常简单，只需要在项目 pom.xml 文件中添加以下依赖：
 ```
 <dependencies>
@@ -55,7 +55,7 @@ owner 是一个 java 库，即 jar 包。owner 可以在 Maven 仓库中获取�
 如果有更新的版本，只需要将新版本号替换 1.0.8 即可。写这篇文章时最新版本就是 1.0.8，但在使用时你最好检查下是否有新版本。  
 当前很多 IDE 都能很好的集成Maven，所以在 pom.xml 文件中增加了上述依赖并刷新项目后，你就可以使用 owner 了。
 
-##<a id="java8">Java 8</a>
+###<a id="java8">Java 8</a>
 java 8 引入了一些新的语言特性，比如接口中的 default methods。这种情况下 artifactId  需要使用 owber-java8 ：
 ```
 <dependencies>

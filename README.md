@@ -31,7 +31,7 @@ owner 是个超轻量 java 库（jar包）， 旨在摒弃 properties 文件的�
 	+ <a href="#access">可访问性和可变性</a>
 	+ <a href="#debug">程序调试</a>
 	+ <a href="#forbit">禁用功能</a>
-	+ <a href="#meta">元配置</a>
+	+ <a href="#factory">配置工厂</a>
 	+ <a href="#xml">XML支持</a>
 	+ <a href="#event">事件支持</a>
 	+ <a href="#singleton">单例</a>
@@ -166,7 +166,7 @@ owner API 支持一系列功能，如下：
 * 可访问性和可变性
 * 程序调试
 * 禁用功能
-* 元配置
+* 配置工厂
 * XML支持
 * 事件支持
 * 单例
@@ -861,7 +861,138 @@ $ java -classpath \
   
 然后可以更改程序所指示的文件，以查看所反映的更改和被截取的重载事件。  
   
-
-
-
+###<a id="access">可访问性和可变性</a>  
+  
+默认情况下，owner 创建的对象是不可改变的且重视信息隐藏。这就意味着一点配置对象被创建它的属性就不能被改变了，并且不能被属性映射方法外的其他方式所访问。  
+  
+这些方式是设计 owner 时做的限制，但有时候用户会觉得这并非很好，因此这里提供了 Mutable 接口和 Accessible 接口。以下是Mutable 接口和 Accessible 接口的层次结构：  
+  
+![](http://owner.aeonbits.org/img/config-hierarchy.png)  
+  
+#####Mutable 接口  
+Mutable 接口允许开发者在程序运行期间改变 Config 对象的属性。比如：  
+  
+```
+interface MyConfig extends Mutable {
+    @DefaultValue("18")
+    public Integer minAge();
+    public Integer maxAge();
+}
+MyConfig cfg = ConfigFactory.create(MyConfig.class);
+// this comes from the @DefaultValue
+assertEquals(Integer.valueOf(18), cfg.minAge());
+// now we change the minAge to 21 using setProperty
+String oldValue = cfg.setProperty("minAge", "21");
+assertEquals("18", oldValue); // the old value was 18
+assertEquals(Integer.valueOf(21), cfg.minAge()); // now is 21
+// now we remove the minAge property
+oldValue = cfg.removeProperty("minAge");
+assertEquals("21", oldValue); // the old value is 21
+assertNull(cfg.minAge()); // now is null
+```  
+  
+上面例子中我们看到 setProperty 和 removeProperty 操作，Mutable 接口甚至提供了 clear() 、load(InputStream) 和 load(Reader) 方法，它实现了对 Config 对象内属性的完整写访问。  
+  
+#####Accessible 接口  
+Mutable 接口实现了对 Config 对象内属性的完整写访问，Accessible  则允许读访问。  
+  
+```
+interface MyConfig extends Accessible {
+    @DefaultValue("Bohemian Rapsody - Queen")
+    String favoriteSong();
+    @Key("salutation.text")
+    @DefaultValue("Good Morning")
+    String salutation();
+}
+MyConfig cfg = ConfigFactory.create(MyConfig.class);
+assertEquals("Good Morning", cfg.getProperty("salutation.text"));
+// print all properties to a PrintWriter
+cfg.list(System.out);
+// saves properties to an OutputStream
+File tmp = File.createTempFile("owner-", ".tmp");
+cfg.store(new FileOutputStream(tmp), "no comments");
+```
+  
+正如你看到的，Accessible  不局限于 getProperty() ，它还提供了 list()、store()等操作。  
+  
+###<a id="debug">调试</a>  
+在 owner API 中我们保留了对 properties 文件的调试方式。  
+  
+#####toString() 方法  
+toString() 方法可以很方便的让我们看到 Config 对象的内容：  
+  
+```
+interface MyConfig extends Config {
+　　@Key("max.threads")
+　　@DefaultValue("25")
+　　int maxThreads();
+　　@Key("max.folders")
+　　@DefaultValue("99")
+　　int maxFolders();
+　　@Key("default.name")
+　　@DefaultValue("untitled")
+　　String defaultName();
+}
+public static void main(String[] args) {
+　　MyConfig cfg = ConfigFactory.create(MyConfig.class);
+　　System.out.println("cfg = " + cfg);
+　　// output will be: 
+　　// "cfg = {default.name=untitled, max.folders=99, max.threads=25}"
+}
+```  
+  
+#####list() 方法  
+在你的映射接口中选择性的定义以下方法能是你调试更简单。  
+  
+```
+void list(PrintStream out);
+void list(PrintWriter out);
+```
+  
+你可以实现定义了以上两个方法的 Accessible  接口，或者手动增加。  
+  
+手动增加：  
+```
+public interface SampleConfig extends Config {
+　　@Key("server.http.port")
+　　@DefaultValue("80")
+　　int httpPort();
+　　void list(PrintStream out); // manually defined
+}
+ServerConfig cfg = ConfigFactory.create(ServerConfig.class);
+cfg.list(System.out);
+```
+  
+实现 Accessible  接口：  
+```
+public interface SampleConfig extends Accessible {
+　　@Key("server.http.port")
+　　@DefaultValue("80")
+　　int httpPort();
+}
+ServerConfig cfg = ConfigFactory.create(ServerConfig.class);
+cfg.list(System.out); // list() is defined in Accessible interface
+```
+  
+###<a id="forbit">禁用功能</a>  
+由于某些原因你可能想禁用 owner 的一些特性，比如你想自己实现变量扩展，你会想禁用 owner 自身提供的变量扩展特性。这可以通过 @DisabledFeature 注解来实现。  
+  
+@DisabledFeature 注解能同时指定多个特性，可以在接口层面和方法层面使用。  
+  
+```
+// on class level...
+@DisableFeature({VARIABLE_EXPANSION, PARAMETER_FORMATTING}) 
+public interface SampleConfig extends Config {
+    @DefaultValue("Earth")
+    public String planet();
+    // on method level...
+    @DisableFeature({VARIABLE_EXPANSION, PARAMETER_FORMATTING}) 
+    @DefaultValue("Hello %s, welcome on ${planet}!")
+    public String hello(String name); 
+}
+```  
+  
+上面的例子中 String hello(String name) 将会返回 "Hello %s, welcome on ${planet}!"，忽略参数传递。  
+  
+###<a id="factory">配置工厂</a>  
 

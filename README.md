@@ -41,14 +41,15 @@ owner 是一个 java 库，即 jar 包。owner 可以在 Maven 仓库中获取�
 
 #Maven
 在 Maven 项目中引用非常简单，只需要在项目 pom.xml 文件中添加以下依赖：
+```
 <dependencies>
-    <dependency>
-        <groupId>org.aeonbits.owner</groupId>
-        <artifactId>owner</artifactId>
-        <version>1.0.8</version>
-    </dependency>
+　　<dependency>
+　　　　<groupId>org.aeonbits.owner</groupId>
+　　　　<artifactId>owner</artifactId>
+　　　　<version>1.0.8</version>
+　　</dependency>
 </dependencies>  
-
+```
 
 
 

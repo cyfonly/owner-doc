@@ -918,7 +918,7 @@ cfg.store(new FileOutputStream(tmp), "no comments");
 ###<a id="debug">调试</a>  
 在 owner API 中我们保留了对 properties 文件的调试方式。  
   
-#####toString() 方法  
+####toString() 方法  
 toString() 方法可以很方便的让我们看到 Config 对象的内容：  
   
 ```
@@ -941,7 +941,7 @@ public static void main(String[] args) {
 }
 ```  
   
-#####list() 方法  
+####list() 方法  
 在你的映射接口中选择性的定义以下方法能是你调试更简单。  
   
 ```

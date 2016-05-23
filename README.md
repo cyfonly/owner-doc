@@ -720,6 +720,148 @@ cfg.reload() 会像对象初始化时一样重新加载所有属性，假如配�
   
 ![](http://owner.aeonbits.org/img/config-hierarchy.png)  
   
+#####自动热重载  
+  
+你可以指定在配置文件被修改的情况下执行自动重加载属性值。  
+  
+```
+@HotReload
+@Sources("file:foo/bar/baz.properties")
+interface MyConfig extends Config {
+　　@DefaultValue("localhost")
+　　String serverName();
+}
+```  
+  
+你可以看到在上面的例子中我们在接口层面上指定了 @HotReload 注解。  
+  
+热重载只能作用在文件系统 URL 上，就是说你可以在这几种 URL 上让它工作：  
+  
+1. file:path/to/your.properties：  基于文件系统的URL  
+2. jar:file:path/to/some.jar!/path/to/your.properties：  本地文件系统中包含properties文件的jar文件  
+3. classpath:path/to/your.properties：  从 classpath 中加载的资源，通常情况下，应用程序会从基于文件系统的classpath下加载类和资源，因此这种方式几乎任何时候都有效
+  
+假如你不使用 @Sources 注解，owner 会尝试在同一个包下面寻找与类名相同的 properties 文件。  
+  
+#####@HotReload 注解  
+@HotReload 可接受三个可选参数，其定义如下：  
+  
+```
+@interface HotReload {
+　　long value() default 5;
+　　TimeUnit unit() default SECONDS;
+　　HotReloadType type() default SYNC;
+}
+enum HotReloadType {
+　　SYNC, ASYNC
+}  
+```
+[更多细节请点此查看](http://owner.newinstance.it/latest/apidocs/org/aeonbits/owner/Config.HotReload.html)。
+  
+你可以指定热重载的时间间隔（通过value和unit），你也可以指定你需要的重载方式，下面是一些例子：  
+  
+```
+// Using the default values:
+// will check for MyConfig.properties file changes in classpath
+// with interval of 5 seconds.
+// It will use SYNC hot reload.
+@HotReload
+interface MyConfig extends Config { ... }
+// Will check for file changes every 2 seconds.
+// It will use SYNC hot reload.
+@HotReload(2)
+@Sources("file:foo/bar/baz.properties")
+interface MyConfig extends Config { ... }
+// Will check for file changes every 500 millis.
+// It will use SYNC hot reload.
+@HotReload(value=500, unit = TimeUnit.MILLISECONDS)
+@Sources("file:foo/bar/baz.properties")
+interface MyConfig extends Config { ... }
+// Will use ASYNC reload type: will span a
+// separate thread that will check for file
+// changes every 5 seconds (default)
+@HotReload(type=HotReloadType.ASYNC)
+@Sources("file:foo/bar/baz.properties")
+interface MyConfig extends Config { ... }
+// Will use ASYNC reload type and will check every 2 seconds.
+@HotReload(value=2, type=HotReloadType.ASYNC)
+@Sources("file:foo/bar/baz.properties")
+interface MyConfig extends Config { ... }
+```  
+  
+文件的最后修改日期将被用来检测文件的更改。  
+  
+#####同步热重载  
+同步热重载以这样的方式工作：每次你调用通过 ConfigFactory.create() 构造的 Config 对象的方法时，配置文件就会检查修改并重载文件。这就意味着，假如你在很长一段时间内都没有使用 Config 对象，在对应文件系统上就不会去检查，重载也不会发生。鉴于此，我们也可以称这种方法为“懒加载”，因为只有我们使用时才会发生。  
+  
+这种方式是使用 @HotReload 的默认工作方式，你也可以显示的声明其工作方式：  
+  
+```
+@HotReload(type=HotReloadType.SYNC)
+```  
+  
+#####异步热重载  
+异步热载以这样的方式工作：在指定的时间间隔上执行一个单独的线程上的周期性任务来检查更新并重载。也就是说即使你不调用也会有重载发生。通过指定 type=ASYNC 来选择这种方式。  
+  
+```
+@HotReload(type=HotReloadType.ASYNC)
+```  
+  
+#####热加载示例  
+在项目源码中有个热加载的例子：  
+  
+```
+public class AutoReloadExample {
+　　private static final String spec =　"file:target/test-resources/AutoReloadExample.properties";
+　　private static File target;
+　　@Sources(spec)
+　　@HotReload(1)
+　　interface AutoReloadConfig extends Config, Reloadable {
+　　　　@DefaultValue("5")
+　　　　Integer someValue();
+　　}
+　　static {
+　　　　try {
+　　　　　　target = new File(new URL(spec).getFile());
+　　　　} catch (MalformedURLException e) {
+　　　　　　e.printStackTrace();
+　　　　}
+　　}
+　　public static void main(String[] args)
+　　　　throws IOException, InterruptedException {save(target, new Properties() { {
+　　　　　　setProperty("someValue", "10");
+　　　　}});
+　　　　AutoReloadConfig cfg =　ConfigFactory.create(AutoReloadConfig.class);
+　　　　cfg.addReloadListener(new ReloadListener() {
+　　　　　　　public void reloadPerformed(ReloadEvent event) {
+　　　　　　　　　System.out.print( "\rReload intercepted at "+ new Date() + " \n");
+　　　　　　　}
+　　　　});
+　　　　System.out.println("You can change the file "+ target.getAbsolutePath() +　" and see the changes reflected below");
+　　　　int someValue = 0;
+　　　　while (someValue >= 0) {
+　　　　　　someValue = cfg.someValue();
+　　　　　　System.out.print("\rsomeValue is: " + someValue + "\t\t\t\t");
+　　　　　　Thread.sleep(500);
+　　　}
+　　}
+}
+```  
+  
+你要运行这个例子的话，需要执行以下步骤：  
+  
+```
+# after downloading the sources in the directory 'owner'
+$ cd owner
+$ mvn clean compile test-compile
+$ java -classpath \
+       target/classes/:target/test-classes/ \
+       org.aeonbits.owner.examples.AutoReloadExample
+```  
+  
+然后可以更改程序所指示的文件，以查看所反映的更改和被截取的重载事件。  
+  
+
 
 
 

@@ -12,15 +12,15 @@ owner 是个超轻量 java 库（jar包）， 旨在摒弃 properties 文件的�
 
 #目录
 - <a href="#owner">owner 是什么</a>
-- 安装
-	+ maven
-	+ java 8
-- 基本用法
+- <a href="#install">安装</a>
+	+ <a href="#maven">maven</a>
+	+ <a href="#java8">java 8</a>
+- <a href="#baseuse">基本用法</a>
 	+ 映射机制
 	+ 使用 Config 对象
 	+ 使用 @DefaultValue 和 @Key 注解
 	+ 未定义属性
-- 功能特性
+- <a href="#feature">功能特性</a>
 	+ 加载策略
 	+ 引用属性
 	+ 参数化属性
@@ -38,10 +38,10 @@ owner 是个超轻量 java 库（jar包）， 旨在摒弃 properties 文件的�
 #<a id="owner">owner 是什么</a>
 owner 是一个 java 库，旨在减少通过 properties 文件来处理应用程序配置的代码。它已经打包成一个 jar 文件，你也可以从 Maven 中央仓库下载。开发此 API 是受 GWT i18n 启迪（[点此查看](http://www.gwtproject.org/doc/latest/DevGuideI18nConstants.html)）。使用 GWT i18n 来加载配置文件有一个问题，那就是它仅仅适用于客户端代码（JavaScript），不是标准的 java 类。此外，GWT 是一个大的库，它是为了很多用途而设计，并不仅仅针对配置文件。  
 
-#安装
+#<a id="install">安装</a>
 owner 是一个 java 库，即 jar 包。owner 可以在 Maven 仓库中获取，当然你也可以从这个连接下载它的库 jar 包、javadoc.jar、sources.jar 或者包含源码及 javadocs 的文件。下载好之后，你就需要配置你的 IDE 了。一般来说你只需要在 CLASSPATH 环境变量中引入它的 jar 包。
 
-#Maven
+#<a id="maven">Maven</a>
 在 Maven 项目中引用非常简单，只需要在项目 pom.xml 文件中添加以下依赖：
 ```
 <dependencies>
@@ -55,7 +55,7 @@ owner 是一个 java 库，即 jar 包。owner 可以在 Maven 仓库中获取�
 如果有更新的版本，只需要将新版本号替换 1.0.8 即可。写这篇文章时最新版本就是 1.0.8，但在使用时你最好检查下是否有新版本。  
 当前很多 IDE 都能很好的集成Maven，所以在 pom.xml 文件中增加了上述依赖并刷新项目后，你就可以使用 owner 了。
 
-#Java 8
+#<a id="java8">Java 8</a>
 java 8 引入了一些新的语言特性，比如接口中的 default methods。这种情况下 artifactId  需要使用 owber-java8 ：
 ```
 <dependencies>
@@ -68,7 +68,7 @@ java 8 引入了一些新的语言特性，比如接口中的 default methods。
 ```
 由于 owner-java8 依赖于 owner，所以你不需要在 Maven 依赖中同时指定它们两个。
 
-#基本用法
+#<a id="baseuse">基本用法</a>
 要使用 owner API，你需要先定义一个与 properties 文件相关联的 java 接口类。
 假设你定义的 properties 文件名字为 ServerConfig.properties：
 ```
@@ -91,7 +91,7 @@ public interface ServerConfig extends Config {
   
 
 
-#功能特性
+#<a id="feature">功能特性</a>
 > 简单的事情就应该是简单的，复杂的事情就应该是可能的。  
 > 　　　　　　　　　　　　—— 天才计算机大师 艾伦.凯 
 

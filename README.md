@@ -36,6 +36,18 @@ owner API 支持一系列功能，如下：
 #owner 是什么
 owner 是一个 java 库，旨在减少通过 properties 文件来处理应用程序配置的代码。它已经打包成一个 jar 文件，你也可以从 Maven 中央仓库下载。开发此 API 是受 GWT i18n 启迪（[点此查看](http://www.gwtproject.org/doc/latest/DevGuideI18nConstants.html)）。使用 GWT i18n 来加载配置文件有一个问题，那就是它仅仅适用于客户端代码（JavaScript），不是标准的 java 类。此外，GWT 是一个大的库，它是为了很多用途而设计，并不仅仅针对配置文件。  
 
+#安装
+owner 是一个 java 库，即 jar 包。owner 可以在 Maven 仓库中获取，当然你也可以从这个连接下载它的库 jar 包、javadoc.jar、sources.jar 或者包含源码及 javadocs 的文件。下载好之后，你就需要配置你的 IDE 了。一般来说你只需要在 CLASSPATH 环境变量中引入它的 jar 包。
+
+#Maven
+在 Maven 项目中引用非常简单，只需要在项目 pom.xml 文件中添加以下依赖：
+<dependencies>
+    <dependency>
+        <groupId>org.aeonbits.owner</groupId>
+        <artifactId>owner</artifactId>
+        <version>1.0.8</version>
+    </dependency>
+</dependencies>  
 
 
 

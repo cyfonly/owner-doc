@@ -25,16 +25,16 @@ owner 是个超轻量 java 库（jar包）， 旨在摒弃 properties 文件的�
 	+ <a href="#loadstra">加载策略</a>
 	+ <a href="#import">引用属性</a>
 	+ <a href="#param">参数化属性</a>
-	+ 类型转换
-	+ 变量扩展
-	+ 加载和热加载
-	+ 可访问性和可变性
-	+ 程序调试
-	+ 禁用功能
-	+ 元配置
-	+ XML支持
-	+ 事件支持
-	+ 单例
+	+ <a href="#typeconvert">类型转换</a>
+	+ <a href="#variextend">变量扩展</a>
+	+ <a href="#reload">加载和热加载</a>
+	+ <a href="#access">可访问性和可变性</a>
+	+ <a href="#debug">程序调试</a>
+	+ <a href="#forbit">禁用功能</a>
+	+ <a href="#meta">元配置</a>
+	+ <a href="#xml">XML支持</a>
+	+ <a href="#event">事件支持</a>
+	+ <a href="#singleton">单例</a>
 
 #<a id="owner">owner 是什么</a>
 owner 是一个 java 库，旨在减少通过 properties 文件来处理应用程序配置的代码。它已经打包成一个 jar 文件，你也可以从 Maven 中央仓库下载。开发此 API 是受 GWT i18n 启迪（[点此查看](http://www.gwtproject.org/doc/latest/DevGuideI18nConstants.html)）。使用 GWT i18n 来加载配置文件有一个问题，那就是它仅仅适用于客户端代码（JavaScript），不是标准的 java 类。此外，GWT 是一个大的库，它是为了很多用途而设计，并不仅仅针对配置文件。  

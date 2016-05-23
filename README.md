@@ -173,7 +173,7 @@ owner API 支持一系列功能，如下：
 
 新特性的开发不希望将已有特性变得复杂，版本的向后兼容也在我们的目标当中。
 
-###<a id="loadstra">加载策略</a>
+####<a id="loadstra">加载策略</a>
 properties 文件和映射接口的关联是通过 owner API 匹配类名和文件名（.properties）来实现的，当然这个逻辑是可以根通过一些额外的注解来实现用户个性化的需求。
 ```
 @Sources({ "file:~/.myapp.config", 
@@ -219,7 +219,7 @@ public interface ServerConfig extends Config {
   
 @Sources注解通过语法 file:${user.home}/.myapp.config （通过'user.home' 系统属性得到解决）或者 file:${HOME}/.myapp.config （通过$HOME 环境变量得到解决）考虑系统属性或环境变量。前面例子中使用的“~”是另一个变量扩展的例子，它等同于 ${user.home}。  
 
-###<a id="import">引用属性</a>
+####<a id="import">引用属性</a>
 你可以使用另外的机制来加载属性到映射接口中，那就是在调用 ConfigFactory.create() 时人工指定一个属性对象：  
   
 ```
@@ -283,6 +283,63 @@ assertEquals(System.getenv().get("HOME"), cfg.home());
 assertEquals(System.getenv().get("USER"), cfg.user());
 ```  
 
+#####<a id="interact">与加载策略的交互</a>  
+上面讲到的“引用属性”是属性加载机制中的附加功能。通过代码引入的属性在优先级上要高于通过 @Sources 注释的方式。假设有这样一个场景，你已通过 @Sources 定义你的配置文件，但是你又想让用户在代码中自己指定配置文件，这个时候怎么办呢？  
+  
+```
+@Sources(...)
+interface MyConfig extends Config { 
+　　...
+}
+public static void main(String[] args) {
+　　MyConfig cfg;
+　　if (args.lenght() > 0) {
+　　　　Properties props = new Properties();
+　　　　props.load(new FileInputStream(new File(args[0])));
+　　　　cfg = ConfigFactory.create(MyConfig.class, userProps);
+　　} else {
+　　　　cfg = ConfigFactory.create(MyConfig.class);
+　　}
+}
+```  
+  
+在上例中，用户指定的 properties 文件将会重写通过 @Sources 注解加载的 properties 文件中的同名属性。很多命令行工具会使用这种方式，它允许用户在命令行中重写默认配置。（这仅针对1.0.3.1及更高级的版本，在1.0.3.1版本之前引用属性优先级比从 properties 文件中加载的要低。这在1.0.3.1作出改变，并将在以后的版本中都采用这种方式）  
+  
+####<a id="param">参数化属性</a>
+owner 另外一个杰出的特性，就是它允许在方法接口上提供参数。属性值应当遵循 java.util.Formatter 类指定的位置计数规则。  
+  
+```
+public interface Sample extends Config {
+　　@DefaultValue("Hello Mr. %s!")
+　　String helloMr(String name);
+}
+Sample cfg = ConfigFactory.create(Sample.class);
+print(cfg.helloMr("Luigi")); // will println 'Hello Mr. Luigi!'
+```  
+  
+#####<a id="forbit">禁用参数扩展</a>
+owner 支持用户关闭参数扩展，这可以通过使用 @DisableFeature 注解来实现。  
+  
+```
+public interface Sample extends Config {
+　　@DisableFeature(PARAMETER_FORMATTING)
+　　@DefaultValue("Hello %s.")    
+　　public String hello(String name); 
+　　// 将会忽略参数并返回"Hello %s."
+}
+```  
+  
+@DisableFeature 注解可以用在方法层面，也可以用在接口层面，当使用在接口层面时，将会适用于该接口下的所有方法。  
+  
+```
+DisableFeature(PARAMETER_FORMATTING)
+public interface Sample extends Config {
+　　@DefaultValue("Hello %s.")    
+　　public String hello(String name); 
+　　// 将会忽略参数并返回"Hello %s."
+}
+```  
+  
 
   
   

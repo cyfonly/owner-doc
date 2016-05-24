@@ -4,11 +4,12 @@
 owner github：[https://github.com/lviggiano/owner](https://github.com/lviggiano/owner)  
 英文文档地址：[http://owner.aeonbits.org/](http://owner.aeonbits.org/)  
 中文文档地址：[http://www.cnblogs.com/cyfonly/p/5523101.html](http://www.cnblogs.com/cyfonly/p/5523101.html)  
-  
+更新列表地址：[update-list.md]|(./update-list.md)  
+
   
 
 ---  
-###　　　　　　　　　　　　作者：YunFeng Cheng  
+###　　　　　　　　　　　作者：YunFeng Cheng  
 　　　　　　　　　　　　　　　owner 中文文档谨由本人维护，欢迎提出建议。  
   
   

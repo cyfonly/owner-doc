@@ -4,7 +4,7 @@
 owner github：[https://github.com/lviggiano/owner](https://github.com/lviggiano/owner)  
 英文文档地址：[http://owner.aeonbits.org/](http://owner.aeonbits.org/)  
 中文文档地址：[http://www.cnblogs.com/cyfonly/p/5523101.html](http://www.cnblogs.com/cyfonly/p/5523101.html)  
-　　更新列表：<a href="/cyfonly/owner/blob/master/update-list.md">update-list.md</a>
+　　更新列表：<a href="/update-list.md">update-list.md</a>
 
   
 

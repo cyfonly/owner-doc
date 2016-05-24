@@ -5,8 +5,7 @@ owner github：[https://github.com/lviggiano/owner](https://github.com/lviggiano
 英文文档地址：[http://owner.aeonbits.org/](http://owner.aeonbits.org/)  
 中文文档地址：[http://www.cnblogs.com/cyfonly/p/5523101.html](http://www.cnblogs.com/cyfonly/p/5523101.html)  
 
-<font color=#FF0000>owner 中文文档谨由本人维护，欢迎提供建议。</font>
-<font color=#0099ff size=5 face="黑体">color=#0099ff size=5 face="黑体"</font>
+`owner 中文文档谨由本人维护，欢迎提供建议。`
 
 #概述
 owner 是个超轻量 java 库（jar包）， 旨在摒弃 properties 文件的样板代码，助你轻松管理项目配置： 

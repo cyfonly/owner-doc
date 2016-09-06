@@ -14,6 +14,8 @@
   
 可下载文件已经发布到[Github](https://github.com/lviggiano/owner/releases/tag/owner-parent-1.0.9)和[Maven Central Repository](http://repo1.maven.org/maven2/org/aeonbits/owner/owner-assembly/1.0.9/)。
   
+  
+
 # Owner 1.0.8 发布  
 2015-03-31  
 ```

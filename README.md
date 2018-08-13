@@ -1,4 +1,4 @@
-#Welcome 
+# Welcome 
 本文旨在对 owner 提供综合性的指导，包括基本功能、高级用法等主题，并且文中附有详细 demo。  
 
 owner github：[https://github.com/lviggiano/owner](https://github.com/lviggiano/owner)  
@@ -14,13 +14,13 @@ owner github：[https://github.com/lviggiano/owner](https://github.com/lviggiano
   
   
 
-#概述
+# 概述
 owner 是个超轻量 java 库（jar包）， 旨在摒弃 properties 文件的样板代码，助你轻松管理项目配置： 
 * 简便：无需加载多余代码，转换并管理 properties 配置文件，通过最简单的方式使用你的 properties
 * 强大：基于注解，自动类型转换，变量扩展，加载策略，热加载，事件通知，等等
 * 灵活：选择你需要的功能，屏蔽你不需要的；容易上手，具有丰富的文档 
 
-#目录
+# 目录
 - [owner 是什么](https://github.com/cyfonly/owner/wiki/overview)
 - [安装](https://github.com/cyfonly/owner/wiki/install)
 	+ [maven](https://github.com/cyfonly/owner/wiki/install#user-content-maven)
